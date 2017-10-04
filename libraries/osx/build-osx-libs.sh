@@ -20,6 +20,7 @@
 #
 # --------------------------------------------------------------
 # Library versions for ease of updating:
+AUTOCONF_VERSION="autoconf-2.69"
 ZLIB_VERSION="zlib-1.2.11"
 CURL_VERSION="curl-7.54.0"
 ICONV_VERSION="libiconv-1.15"
@@ -178,7 +179,7 @@ echo -e "Building libcurl..."
 
 LIB_VERSION="${CURL_VERSION}"
 LIB_ARCHIVE="$LIB_VERSION.tar.bz2"
-LIB_DIRECTORY="$LIB_VERSION"
+LIB_DIRECTORY="curl"
 LIB_URL="http://curl.haxx.se/download/"
 
 mkdir -p libcurl
@@ -189,12 +190,13 @@ then
   INSTALL_DIR="$(pwd)"
 
   rm -f .already-built
-  download_lib $LIB_URL $LIB_ARCHIVE
+  rm -rf bin include lib share
 
-  rm -rf $LIB_DIRECTORY bin include lib share
-  tar -xf $LIB_ARCHIVE
+  [ ! -d "$LIB_DIRECTORY" ] && git clone https://github.com/curl/curl.git
   pushd $LIB_DIRECTORY
+  git pull
 
+  ./buildconf
   (./configure CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" --prefix="$INSTALL_DIR" --enable-ipv6 --without-gnutls --without-gssapi --without-libmetalink --without-librtmp --without-libssh2 --without-nss --without-polarssl --without-spnego --without-ssl --disable-ares --disable-ldap --disable-ldaps --without-libidn --with-zlib="${ZLIB_DIR}" --enable-shared=no && make ${JOBS} && make install) || die "libcurl build failed"
   popd
   touch .already-built
@@ -334,7 +336,7 @@ echo -e "Building wxWidgets..."
 
 LIB_VERSION="${WXWIDGETS_VERSION}"
 LIB_ARCHIVE="$LIB_VERSION.tar.bz2"
-LIB_DIRECTORY="$LIB_VERSION"
+LIB_DIRECTORY="wxwidgets"
 LIB_URL="http://github.com/wxWidgets/wxWidgets/releases/download/v3.0.3.1/"
 
 mkdir -p wxwidgets
@@ -345,16 +347,17 @@ then
   INSTALL_DIR="$(pwd)"
 
   rm -f .already-built
-  download_lib $LIB_URL $LIB_ARCHIVE
 
-  rm -rf $LIB_DIRECTORY bin include lib share
-  tar -xf $LIB_ARCHIVE
+  rm -rf bin include lib share
+  
+  [ ! -d "$LIB_DIRECTORY" ] && git clone https://github.com/wxWidgets/wxWidgets.git
   pushd $LIB_DIRECTORY
+  git pull
 
   mkdir -p build-release
   pushd build-release
 
-  CONF_OPTS="--prefix=$INSTALL_DIR --disable-shared --enable-macosx_arch=$ARCH --enable-unicode --with-cocoa --with-opengl --with-libiconv-prefix=${ICONV_DIR} --with-expat=builtin --with-png=builtin --without-libtiff --without-sdl --without-x --disable-webview --disable-webkit --disable-webviewwebkit --disable-webviewie"
+  CONF_OPTS="--prefix=$INSTALL_DIR --disable-shared --enable-macosx_arch=$ARCH --enable-unicode --with-cocoa --with-opengl --with-libiconv-prefix=${ICONV_DIR} --with-expat=builtin --with-libpng --without-libtiff --without-sdl --without-x --disable-webview --disable-webkit --disable-webviewwebkit --disable-webviewie"
   # wxWidgets configure now defaults to targeting 10.5, if not specified,
   # but that conflicts with our flags
   if [[ $MIN_OSX_VERSION && ${MIN_OSX_VERSION-_} ]]; then
